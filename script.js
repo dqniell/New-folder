@@ -2,17 +2,13 @@
 const boardContainer = document.querySelector('.board-container');
 const board = document.querySelector('.board');
 const moves = document.querySelector('.numMoves');
-const timer = document.querySelector('.timer');
-const startButton = document.querySelector('button');
 const winMessage = document.querySelector('.win');
 
 // Game state variables
 const gameState = {
-    isGameStarted: false,
-    flippedCards: 0,
-    totalFlips: 0,
-    totalTime: 0,
-    interval: null,
+    started: true, // Start the game automatically
+    cardsFlipped: 0,
+    score: 0,
 };
 
 // Shuffle an array randomly
@@ -39,17 +35,11 @@ function pickRandomItems(array, numItems) {
 
 // Generate the game board with cute emojis
 function generateGameBoard() {
-    const dimensions = board.getAttribute('data-dimension');
-
-    if (dimensions % 2 !== 0) {
-        throw new Error("The dimension of the board must be an even number.");
-    }
-
     const cuteEmojis = ['🐶', '🐱', '🐻', '🐼', '🐰', '🐨', '🦁', '🦄', '🐷', '🐸'];
-    const picks = pickRandomItems(cuteEmojis, (dimensions * dimensions) / 2);
+    const picks = pickRandomItems(cuteEmojis, (4 * 4) / 2);
     const items = shuffleArray([...picks, ...picks]);
 
-    let cardsHTML = '<div class="board" style="grid-template-columns: repeat(' + dimensions + ', auto)">';
+    let cardsHTML = '<div class="board" style="grid-template-columns: repeat(' + 4 + ', auto)">';
 
     items.forEach(function (item) {
         cardsHTML += '<div class="card">' +
@@ -65,13 +55,11 @@ function generateGameBoard() {
 
 // Start the game and track time and moves
 function startGame() {
-    gameState.isGameStarted = true;
+    gameState.started = true;
     startButton.classList.add('disabled');
 
     gameState.interval = setInterval(function () {
-        gameState.totalTime++;
-        moves.innerText = gameState.totalFlips + ' moves';
-        timer.innerText = 'time: ' + gameState.totalTime + ' sec';
+        moves.innerText = gameState.score + ' moves';
     }, 1000);
 }
 
@@ -81,28 +69,28 @@ function flipBackUnmatchedCards() {
         card.classList.remove('flipped');
     });
 
-    gameState.flippedCards = 0;
+    gameState.cardsFlipped = 0;
 }
 
 // Flip a card
 function flipCard(card) {
-    gameState.flippedCards++;
-    gameState.totalFlips++;
+    gameState.cardsFlipped++;
+    gameState.score++; // Increment the score
 
-    if (!gameState.isGameStarted) {
+    if (!gameState.started) {
         startGame();
     }
 
-    if (gameState.flippedCards <= 2) {
+    if (gameState.cardsFlipped <= 2) {
         card.classList.add('flipped');
     }
 
-    if (gameState.flippedCards === 2) {
-        const flippedCards = document.querySelectorAll('.flipped:not(.matched)');
+    if (gameState.cardsFlipped === 2) {
+        const cardsFlipped = document.querySelectorAll('.flipped:not(.matched)');
 
-        if (flippedCards[0].innerText === flippedCards[1].innerText) {
-            flippedCards[0].classList.add('matched');
-            flippedCards[1].classList.add('matched');
+        if (cardsFlipped[0].querySelector('.card-back').innerText === cardsFlipped[1].querySelector('.card-back').innerText) {
+            cardsFlipped[0].classList.add('matched');
+            cardsFlipped[1].classList.add('matched');
         }
 
         setTimeout(function () {
@@ -115,7 +103,7 @@ function flipCard(card) {
             boardContainer.classList.add('flipped');
             winMessage.innerHTML = '<span class="win-text">' +
                 'You won!<br />' +
-                'with <span class="highlight">' + gameState.totalFlips + '</span> moves<br />' +
+                'with <span class="highlight">' + gameState.score + '</span> moves<br />' +
                 'under <span class="highlight">' + gameState.totalTime + '</span> seconds' +
                 '</span>';
 
@@ -132,8 +120,6 @@ function attachEventListeners() {
 
         if (eventTarget.className.includes('card') && !eventParent.className.includes('flipped')) {
             flipCard(eventParent);
-        } else if (eventTarget.nodeName === 'BUTTON' && !eventTarget.className.includes('disabled')) {
-            startGame();
         }
     });
 }
